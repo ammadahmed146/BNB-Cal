@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Prices</title>
+<style>
+  table { border-collapse: collapse; width: 300px; }
+  th, td { border: 1px solid #333; padding: 2px; text-align: center; }
+  button { margin-top: 10px; padding: 5px 10px; cursor: pointer; }
+  .copied { background-color: green; color: white; }
+</style>
+</head>
+<body>
+
+<h2>Crypto Prices</h2>
+
+
+
+<button id="copyBtn" onclick="copyTable()">Copy Data</button>
+<button type="button" onclick="fetchPrices()">Refresh</button>
+<br><br />
+
+<table id="cryptoTable">
+  <tr><th>Coin</th><th>Price (USDT)</th></tr>
+</table>
+
+
+<script>
+const coins = [
+"BTC","SOL","BNB","ETH","LTC","DOT","XRP","SUI","XLM","SHIB",
+"CAKE","FET","DOGE","ADA","LINK","GMT","TST","XEC","VTHO","TURBO",
+"PEPE","1000CHEEMS","PEOPLE","BOME","BANANAS31","MEME","NEIRO","BONK",
+"1MBABYDOGE","DOGS","SPELL","FLOKI","1000SATS","BEAMX","SYS","MLN"
+];
+
+const symbols = coins.map(coin => coin + "USDT");
+const table = document.getElementById("cryptoTable");
+const copyBtn = document.getElementById("copyBtn");
+
+// Fetch prices from Binance API in parallel
+async function fetchPrices() {
+  const requests = symbols.map(symbol => 
+    fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`)
+      .then(res => {
+        if (!res.ok) return { symbol, price: "N/A" };
+        return res.json();
+      })
+      .catch(() => ({ symbol, price: "N/A" }))
+  );
+
+  const results = await Promise.all(requests);
+
+  // Clear old rows but keep header
+  table.innerHTML = "<tr><th>Coin</th><th>Price (USDT)</th></tr>";
+
+  results.forEach(data => {
+    const row = table.insertRow();
+    row.insertCell(0).innerText = data.symbol.replace("USDT","");
+    row.insertCell(1).innerText = data.price === "N/A" ? "N/A" : parseFloat(data.price);
+  });
+}
+
+// Copy table data to clipboard and change button text/color
+function copyTable() {
+  let text = "";
+  for (let i = 1; i < table.rows.length; i++) {
+    text += table.rows[i].cells[0].innerText + "\t" + table.rows[i].cells[1].innerText + "\n";
+  }
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.innerText = "Copied";
+    copyBtn.classList.add("copied");
+    setTimeout(() => {
+      copyBtn.innerText = "Copy Data";
+      copyBtn.classList.remove("copied");
+    }, 2000);
+  });
+}
+
+// Initial fetch
+window.onload = fetchPrices;
+
+// Auto-refresh every 10 seconds
+setInterval(fetchPrices, 10000);
+</script>
+
+</body>
+</html>
